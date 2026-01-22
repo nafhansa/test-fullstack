@@ -48,20 +48,15 @@ paths:
               required:
                 - name
                 - price
-                - stock
               properties:
                 name:
                   type: string
-                  example: Laptop ASUS ROG
+                  example: Pemadanan Data dan Dokumen Kependudukan
                 price:
                   type: number
                   format: decimal
                   minimum: 0
-                  example: 15000000
-                stock:
-                  type: integer
-                  minimum: 0
-                  example: 10
+                  example: 5000
       responses:
         '201':
           description: Product created
@@ -131,8 +126,6 @@ paths:
                 price:
                   type: number
                   format: decimal
-                stock:
-                  type: integer
       responses:
         '200':
           description: Product updated
@@ -178,14 +171,11 @@ components:
           example: 1
         name:
           type: string
-          example: Laptop ASUS ROG
+          example: Verifikasi Data Kependudukan Berbasis Web
         price:
           type: number
           format: decimal
-          example: 15000000
-        stock:
-          type: integer
-          example: 10
+          example: 3500
         created_at:
           type: string
           format: date-time

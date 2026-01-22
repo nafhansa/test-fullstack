@@ -265,7 +265,7 @@ PORT=3001
 
 **Swagger UI:** 📖 http://localhost:3002/api-docs
 
-**Database:** `db_product` - Table: `products` (id, name, price, stock, created_at, updated_at)
+**Database:** `db_product` - Table: `products` (id, name, price, created_at, updated_at)
 
 **Catatan:** 
 - Endpoint GET `/api/products` adalah PUBLIC (bisa diakses siapa aja)
@@ -384,9 +384,8 @@ curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{
-    "name": "Laptop ASUS ROG",
-    "price": 15000000,
-    "stock": 10
+    "name": "Pemadanan Data dan Dokumen Kependudukan",
+    "price": 5000
   }'
 
 # Response:
@@ -398,7 +397,7 @@ curl -X POST http://localhost:3000/api/products \
 curl http://localhost:3000/api/products
 
 # Response:
-# [{"id":1,"name":"Laptop ASUS ROG","price":"15000000.00","stock":10,...}]
+# [{"id":1,"name":"Pemadanan Data dan Dokumen Kependudukan","price":"5000.00",...}]
 ```
 
 #### 5. Register User (Pembeli)
@@ -508,7 +507,7 @@ echo -e "\n3. Creating product..."
 curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -d '{"name":"Laptop ASUS ROG","price":15000000,"stock":10}'
+  -d '{"name":"Verifikasi Data Kependudukan Berbasis Web","price":3500}'
 
 # 4. Register User
 echo -e "\n4. Registering user..."

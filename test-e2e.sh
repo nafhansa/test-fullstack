@@ -46,7 +46,7 @@ echo -e "\n${YELLOW}3. Creating product...${NC}"
 PRODUCT_RESPONSE=$(curl -s -X POST $BASE_URL/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -d '{"name":"Laptop ASUS ROG","price":15000000,"stock":10}')
+  -d '{"name":"Pemadanan Data dan Dokumen Kependudukan","price":5000}')
 echo $PRODUCT_RESPONSE | jq '.'
 
 PRODUCT_ID=$(echo $PRODUCT_RESPONSE | jq -r '.productId')

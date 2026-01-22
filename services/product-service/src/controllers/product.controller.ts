@@ -6,7 +6,6 @@ interface Product extends RowDataPacket {
   id: number;
   name: string;
   price: number;
-  stock: number;
 }
 
 export async function getAllProducts(req: Request, res: Response) {
@@ -40,21 +39,21 @@ export async function getProductById(req: Request, res: Response) {
 
 export async function createProduct(req: Request, res: Response) {
   try {
-    const { name, price, stock } = req.body;
+    const { name, price } = req.body;
 
     // Validation
-    if (!name || price === undefined || stock === undefined) {
-      return res.status(400).json({ error: 'Name, price, and stock are required' });
+    if (!name || price === undefined) {
+      return res.status(400).json({ error: 'Name and price are required' });
     }
 
-    if (price < 0 || stock < 0) {
-      return res.status(400).json({ error: 'Price and stock must be non-negative' });
+    if (price < 0) {
+      return res.status(400).json({ error: 'Price must be non-negative' });
     }
 
     // Insert product
     const [result] = await pool.query<ResultSetHeader>(
-      'INSERT INTO products (name, price, stock) VALUES (?, ?, ?)',
-      [name, price, stock]
+      'INSERT INTO products (name, price) VALUES (?, ?)',
+      [name, price]
     );
 
     res.status(201).json({
@@ -73,7 +72,7 @@ export async function createProduct(req: Request, res: Response) {
 export async function updateProduct(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { name, price, stock } = req.body;
+    const { name, price } = req.body;
 
     // Check if product exists
     const [existing] = await pool.query<Product[]>(
@@ -99,13 +98,6 @@ export async function updateProduct(req: Request, res: Response) {
       }
       updates.push('price = ?');
       values.push(price);
-    }
-    if (stock !== undefined) {
-      if (stock < 0) {
-        return res.status(400).json({ error: 'Stock must be non-negative' });
-      }
-      updates.push('stock = ?');
-      values.push(stock);
     }
 
     if (updates.length === 0) {

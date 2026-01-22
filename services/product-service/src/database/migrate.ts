@@ -22,11 +22,27 @@ async function migrate() {
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(255) UNIQUE NOT NULL,
         price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
-        stock INT NOT NULL CHECK (stock >= 0),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    // Seed default products
+    console.log('Seeding default products...');
+    const [existingProducts]: any = await connection.query('SELECT COUNT(*) as count FROM products');
+    
+    if (existingProducts[0].count === 0) {
+      await connection.query(`
+        INSERT INTO products (name, price) VALUES
+        ('Pemadanan Data dan Dokumen Kependudukan', 5000),
+        ('Verifikasi Data Kependudukan Berbasis Web', 3500),
+        ('Buku Cetakan Data Agregat Penduduk', 10000)
+      `);
+      
+      console.log('✅ Default products created: 3 products');
+    } else {
+      console.log('ℹ️  Products already exist, skipping seed');
+    }
 
     console.log('✅ Database migration completed!');
   } catch (error) {

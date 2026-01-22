@@ -124,7 +124,7 @@ curl -X GET http://localhost:3000/api/products \
 curl -X POST http://localhost:3000/api/products \
   -H "Authorization: Bearer <admin-jwt-token>" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Laptop","price":5000000,"stock":10}'
+  -d '{"name":"Buku Cetakan Data Agregat Penduduk","price":10000}'
 ```
 
 ## Troubleshooting

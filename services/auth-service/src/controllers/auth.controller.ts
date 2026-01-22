@@ -6,18 +6,21 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 interface User extends RowDataPacket {
   id: number;
+  name: string;
+  username: string;
   email: string;
   password: string;
   role: 'ADMIN' | 'PEMBELI';
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, role = 'PEMBELI' } = req.body;
+    const { name, username, email, password, role = 'PEMBELI', status = 'ACTIVE' } = req.body;
 
     // Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ error: 'Name, username, email, and password are required' });
     }
 
     if (!['ADMIN', 'PEMBELI'].includes(role)) {
@@ -26,12 +29,12 @@ export async function register(req: Request, res: Response) {
 
     // Check if user exists
     const [existingUsers] = await pool.query<User[]>(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
+      'SELECT id FROM users WHERE email = ? OR username = ?',
+      [email, username]
     );
 
     if (existingUsers.length > 0) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: 'Email or username already registered' });
     }
 
     // Hash password
@@ -39,8 +42,8 @@ export async function register(req: Request, res: Response) {
 
     // Insert user
     const [result] = await pool.query<ResultSetHeader>(
-      'INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
-      [email, hashedPassword, role]
+      'INSERT INTO users (name, username, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, username, email, hashedPassword, role, status]
     );
 
     res.status(201).json({
@@ -74,6 +77,11 @@ export async function login(req: Request, res: Response) {
 
     const user = users[0];
 
+    // Check if user is active
+    if (user.status === 'INACTIVE') {
+      return res.status(403).json({ error: 'Account is inactive' });
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
@@ -84,6 +92,8 @@ export async function login(req: Request, res: Response) {
     const token = jwt.sign(
       {
         id: user.id,
+        name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role
       },
@@ -95,6 +105,8 @@ export async function login(req: Request, res: Response) {
       token,
       user: {
         id: user.id,
+        name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role
       }
@@ -108,7 +120,7 @@ export async function login(req: Request, res: Response) {
 export async function getAllUsers(req: Request, res: Response) {
   try {
     const [users] = await pool.query<User[]>(
-      'SELECT id, email, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, name, username, email, role, status, created_at FROM users ORDER BY created_at DESC'
     );
 
     res.json(users);

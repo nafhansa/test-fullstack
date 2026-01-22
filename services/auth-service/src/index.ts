@@ -7,11 +7,18 @@ import fs from 'fs';
 import path from 'path';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { runMigrations } from './database/migrations';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Run migrations on startup
+runMigrations().catch((err) => {
+  console.error('Failed to run migrations:', err);
+  process.exit(1);
+});
 
 // Middleware
 app.use(cors({

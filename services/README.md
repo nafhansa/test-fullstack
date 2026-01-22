@@ -205,7 +205,7 @@ TOKEN="paste-token-disini"
 curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"name":"Laptop ASUS ROG","price":15000000,"stock":10}'
+  -d '{"name":"Pemadanan Data dan Dokumen Kependudukan","price":5000}'
 ```
 
 ### Test Otomatis dengan Script
@@ -453,9 +453,8 @@ curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "name": "Laptop ASUS ROG",
-    "price": 15000000,
-    "stock": 10
+    "name": "Verifikasi Data Kependudukan Berbasis Web",
+    "price": 3500
   }'
 ```
 
@@ -547,7 +546,6 @@ All internal endpoints (protected routes) require:
 - id (INT, PK)
 - name (VARCHAR, UNIQUE)
 - price (DECIMAL)
-- stock (INT)
 - created_at, updated_at (TIMESTAMP)
 
 ### db_transaction.transactions

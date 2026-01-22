@@ -175,7 +175,7 @@ components:
         total_amount:
           type: number
           format: decimal
-          example: 30000000
+          example: 100000
         status:
           type: string
           enum: [BELUM_DIBAYAR, SUDAH_DIBAYAR, EXPIRED]
@@ -198,7 +198,7 @@ components:
           example: TRX-3730
         total_amount:
           type: number
-          example: 30000000
+          example: 100000
         status:
           type: string
           example: BELUM_DIBAYAR
@@ -217,10 +217,10 @@ components:
           type: integer
         product_name:
           type: string
-          example: Laptop ASUS ROG
+          example: Pemadanan Data dan Dokumen Kependudukan
         price_per_item:
           type: number
-          example: 15000000
+          example: 50000
         quantity:
           type: integer
           example: 2

@@ -105,7 +105,8 @@ export default function HistoryPage() {
           </div>
           <div className="flex items-end">
             <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
-              🔍 Filter
+              <img src="/icons/magnifier.svg" alt="Filter" className="w-5 h-5 inline-block mr-2" />
+              Filter
             </button>
           </div>
         </div>
