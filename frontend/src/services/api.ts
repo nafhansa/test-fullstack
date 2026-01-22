@@ -21,24 +21,23 @@ api.interceptors.request.use((config) => {
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    // MOCK DATA
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
-    if (email === "user@store.com" && password === "user123") {
-      return {
-        token: "fake-jwt-token-user",
-        user: { id: 2, email: "user@store.com", role: "PEMBELI" }
-      };
-    }
-    
-    if (email === "admin@store.com" && password === "admin123") {
+    if (email === "admin" && password === "admin") {
       return {
         token: "fake-jwt-token-admin",
         user: { id: 1, email: "admin@store.com", role: "ADMIN" }
       };
     }
 
-    throw new Error("Email atau password salah (Mock)");
+    if (email === "user" && password === "user") {
+      return {
+        token: "fake-jwt-token-user",
+        user: { id: 2, email: "user@store.com", role: "PEMBELI" }
+      };
+    }
+
+    throw new Error("Username atau password salah");
   },
 
   // FIX 2: Tambahkan underscore (_) agar TypeScript tidak komplain variabel tidak terpakai

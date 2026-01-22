@@ -1,20 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/auth/LoginPage';
-
-const HomePage = () => (
-  <div className="p-8 text-center">
-    <h1 className="text-4xl font-bold text-gray-800 mb-4">Selamat Datang di TokoMicro</h1>
-    <p className="text-gray-600">Pusat belanja microservices terlengkap.</p>
-  </div>
-);
-
-const CartPage = () => (
-  <div className="p-8">
-    <h1 className="text-2xl font-bold mb-4">Keranjang Belanja</h1>
-    <p>Isi keranjang akan tampil di sini.</p>
-  </div>
-);
+import DashboardLayout from './components/layout/DashboardLayout';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import UsersPage from './pages/dashboard/admin/UsersPage';
+import MasterProductPage from './pages/dashboard/admin/MasterProductPage';
+import UserDashboardPage from './pages/dashboard/user/UserDashboardPage';
+import PembelianPage from './pages/dashboard/user/PembelianPage';
+import HistoryPage from './pages/dashboard/user/HistoryPage';
 
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,11 +18,16 @@ const ProtectedRoute = () => {
 };
 
 const PublicRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   
   if (isLoading) return null;
 
-  return isAuthenticated ? <Navigate to="/home" replace /> : <Outlet />;
+  if (isAuthenticated) {
+    const redirectPath = user?.role === 'ADMIN' ? '/dashboard' : '/dashboard/user';
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <Outlet />;
 };
 
 function App() {
@@ -42,9 +40,15 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute />}>
-              <Route path="home" element={<HomePage />} />
-              <Route path="cart" element={<CartPage />} />
-              <Route path="orders" element={<div className="p-10">Riwayat Transaksi</div>} />
+            <Route element={<DashboardLayout />}>
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="dashboard/admin/users" element={<UsersPage />} />
+              <Route path="dashboard/admin/master-product" element={<MasterProductPage />} />
+              
+              <Route path="dashboard/user" element={<UserDashboardPage />} />
+              <Route path="dashboard/user/pembelian" element={<PembelianPage />} />
+              <Route path="dashboard/user/history" element={<HistoryPage />} />
+            </Route>
           </Route>
         </Routes>
       </BrowserRouter>

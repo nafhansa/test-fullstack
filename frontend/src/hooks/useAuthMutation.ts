@@ -15,8 +15,9 @@ export const useLoginMutation = () => {
     // Jika SUKSES (200 OK)
     onSuccess: (data) => {
       console.log("Login Berhasil:", data);
-      login(data.token, data.user); // Simpan ke Context & LocalStorage
-      navigate('/'); // Redirect otomatis
+      login(data.token, data.user);
+      const redirectPath = data.user.role === 'ADMIN' ? '/dashboard' : '/dashboard/user';
+      navigate(redirectPath);
     },
     // Jika ERROR
     onError: (error: any) => {
