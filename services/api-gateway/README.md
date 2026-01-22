@@ -1,6 +1,6 @@
 # API Gateway - Kong
 
-Single entry point untuk semua backend services menggunakan Kong Gateway.
+Single entry point untuk semua backend services menggunakan Kong Gateway (DB-less mode).
 
 ## Architecture
 
@@ -8,13 +8,14 @@ Single entry point untuk semua backend services menggunakan Kong Gateway.
 Frontend (Port 5173)
     ↓
 Kong Gateway (Port 3000) ← Public Entry Point
-    ├─> Auth Service (Port 3001)
-    ├─> Product Service (Port 3002)
-    └─> Transaction Service (Port 3003)
+    ├─> Auth Service (Port 3001) - Not running yet
+    ├─> Product Service (Port 3002) - Not running yet
+    └─> Transaction Service (Port 3003) - Not running yet
 ```
 
 ## Features
 
+- ✅ **DB-less Mode** - No database required, using declarative YAML config
 - ✅ **Routing & Proxy** - Forward request ke service yang tepat
 - ✅ **Security Headers** - Auto-inject `X-INTERNAL-KEY` ke semua service
 - ✅ **Request ID** - Correlation ID untuk tracing
@@ -24,7 +25,7 @@ Kong Gateway (Port 3000) ← Public Entry Point
 ## Prerequisites
 
 - Docker & Docker Compose installed
-- Ports available: 3000 (Gateway), 8001 (Admin API), 5432 (PostgreSQL)
+- Ports available: 3000 (Gateway), 8001 (Admin API)
 
 ## Quick Start
 
