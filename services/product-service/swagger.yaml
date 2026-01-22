@@ -1,0 +1,194 @@
+openapi: 3.0.0
+info:
+  title: Product Service API
+  description: Product management service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+    description: Local development
+  - url: http://localhost:3000
+    description: Via API Gateway
+
+tags:
+  - name: Products
+    description: Product CRUD operations
+
+paths:
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Public endpoint - retrieve all products
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+    post:
+      tags:
+        - Products
+      summary: Create product
+      description: Admin only - create new product
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+              properties:
+                name:
+                  type: string
+                  example: Pemadanan Data dan Dokumen Kependudukan
+                price:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  example: 5000
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product created successfully
+                  productId:
+                    type: integer
+                    example: 1
+        '403':
+          description: Forbidden - Missing X-INTERNAL-KEY
+        '409':
+          description: Conflict - Product name already exists
+
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Internal use - for Transaction Service
+      security:
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Admin only - update product
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                  format: decimal
+      responses:
+        '200':
+          description: Product updated
+        '404':
+          description: Product not found
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Admin only - delete product
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product deleted
+        '404':
+          description: Product not found
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Verifikasi Data Kependudukan Berbasis Web
+        price:
+          type: number
+          format: decimal
+          example: 3500
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    InternalKey:
+      type: apiKey
+      in: header
+      name: X-INTERNAL-KEY

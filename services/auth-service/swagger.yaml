@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: Auth Service API
+  description: Authentication and user management service
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: http://localhost:3000
+    description: Via API Gateway
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account (Admin or Pembeli)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@test.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: admin123
+                role:
+                  type: string
+                  enum: [ADMIN, PEMBELI]
+                  default: PEMBELI
+                  example: ADMIN
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User registered successfully
+                  userId:
+                    type: integer
+                    example: 1
+        '400':
+          description: Bad request - Missing required fields
+        '409':
+          description: Conflict - Email already registered
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@test.com
+                password:
+                  type: string
+                  example: admin123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: admin@test.com
+                      role:
+                        type: string
+                        enum: [ADMIN, PEMBELI]
+                        example: ADMIN
+        '401':
+          description: Unauthorized - Invalid credentials
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if service is running
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: auth-service
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

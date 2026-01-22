@@ -87,7 +87,6 @@ Value `X-INTERNAL-KEY` simpan di `.env` (misal: `supersecretkey123`).
 - `id` (INT, PK)
 - `name` (VARCHAR, Unique)
 - `price` (DECIMAL, Min: 0)
-- `stock` (INT, Min: 0)
 
 #### API Contracts (Internal Routes):
 
@@ -97,7 +96,7 @@ Value `X-INTERNAL-KEY` simpan di `.env` (misal: `supersecretkey123`).
 - **Penting:** Endpoint ini akan ditembak oleh Transaction Service buat validasi harga.
 
 **3. POST /products** (Admin Only)
-- Body: `{ "name": "Sepatu", "price": 50000, "stock": 10 }`
+- Body: `{ "name": "Sepatu", "price": 5000}`
 
 **4. PUT /products/:id** (Admin Only)
 
