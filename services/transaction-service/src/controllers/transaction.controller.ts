@@ -155,11 +155,49 @@ export async function createTransaction(req: Request, res: Response) {
 
 export async function getAllTransactions(req: Request, res: Response) {
   try {
-    const [transactions] = await pool.query<Transaction[]>(
-      'SELECT * FROM transactions ORDER BY created_at DESC'
+    // Get user ID from JWT token
+    const authHeader = req.headers['authorization'];
+    let userId: number | undefined;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        userId = decoded.id;
+      } catch (error) {
+        // If token invalid, continue without userId filter
+      }
+    }
+
+    // Build query based on user role
+    let query = 'SELECT * FROM transactions';
+    const params: any[] = [];
+    
+    if (userId) {
+      query += ' WHERE user_id = ?';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+
+    const [transactions] = await pool.query<Transaction[]>(query, params);
+
+    // Get items for each transaction
+    const transactionsWithItems = await Promise.all(
+      transactions.map(async (transaction) => {
+        const [items] = await pool.query<TransactionItem[]>(
+          'SELECT * FROM transaction_items WHERE transaction_id = ?',
+          [transaction.id]
+        );
+        
+        return {
+          ...transaction,
+          items
+        };
+      })
     );
 
-    res.json(transactions);
+    res.json(transactionsWithItems);
   } catch (error) {
     console.error('Get transactions error:', error);
     res.status(500).json({ error: 'Failed to fetch transactions' });

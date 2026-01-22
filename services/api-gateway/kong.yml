@@ -10,6 +10,7 @@ services:
           - /api/auth/register
         methods:
           - POST
+          - OPTIONS
         strip_path: false
         
       - name: auth-login
@@ -17,23 +18,33 @@ services:
           - /api/auth/login
         methods:
           - POST
+          - OPTIONS
         strip_path: false
+      
+      - name: auth-users
+        paths:
+          - /api/auth/users
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
 
   - name: product-service
     url: http://product-service:3002
     routes:
-      - name: products-list
-        paths:
-          - /api/products
-        methods:
-          - GET
-        strip_path: false
-        
+      # Routes with ID parameters (higher priority)
       - name: products-detail
         paths:
-          - /api/products/(?<id>[0-9]+)
+          - ~/api/products/\d+$
         methods:
           - GET
+          - OPTIONS
         strip_path: false
         plugins:
           - name: request-transformer
@@ -41,25 +52,13 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
-        
-      - name: products-create
-        paths:
-          - /api/products
-        methods:
-          - POST
-        strip_path: false
-        plugins:
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - X-INTERNAL-KEY:supersecretkey123
-        
+      
       - name: products-update
         paths:
-          - /api/products/(?<id>[0-9]+)
+          - ~/api/products/\d+$
         methods:
           - PUT
+          - OPTIONS
         strip_path: false
         plugins:
           - name: request-transformer
@@ -70,9 +69,33 @@ services:
         
       - name: products-delete
         paths:
-          - /api/products/(?<id>[0-9]+)
+          - ~/api/products/\d+$
         methods:
           - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      # Routes without ID parameters (lower priority)
+      - name: products-list
+        paths:
+          - /api/products
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        
+      - name: products-create
+        paths:
+          - /api/products
+        methods:
+          - POST
+          - OPTIONS
         strip_path: false
         plugins:
           - name: request-transformer
@@ -84,11 +107,71 @@ services:
   - name: transaction-service
     url: http://transaction-service:3003
     routes:
+      # Specific routes first (checkout, history, pay)
+      - name: transactions-checkout
+        paths:
+          - /api/transactions/checkout
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: transactions-history
+        paths:
+          - /api/transactions/history
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: transactions-pay
+        paths:
+          - /api/transactions/pay
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      # Detail route with regex (lower priority)
+      - name: transactions-detail
+        paths:
+          - ~/api/transactions/\d+$
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      # Generic routes (lowest priority)
       - name: transactions-create
         paths:
           - /api/transactions
         methods:
           - POST
+          - OPTIONS
         strip_path: false
         plugins:
           - name: request-transformer
@@ -102,6 +185,7 @@ services:
           - /api/transactions
         methods:
           - GET
+          - OPTIONS
         strip_path: false
         plugins:
           - name: request-transformer
@@ -109,26 +193,6 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
-        
-      - name: transactions-detail
-        paths:
-          - /api/transactions/(?<id>[0-9]+)
-        methods:
-          - GET
-        strip_path: false
-        plugins:
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - X-INTERNAL-KEY:supersecretkey123
-        
-      - name: transactions-pay
-        paths:
-          - /api/transactions/pay
-        methods:
-          - POST
-        strip_path: false
         plugins:
           - name: request-transformer
             config:
@@ -138,6 +202,31 @@ services:
 
 # Global Plugins
 plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:5173
+        - http://localhost:3000
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+        - X-Auth-Token
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+
   - name: correlation-id
     config:
       header_name: X-Request-ID

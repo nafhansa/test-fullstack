@@ -104,3 +104,16 @@ export async function login(req: Request, res: Response) {
     res.status(500).json({ error: 'Login failed' });
   }
 }
+
+export async function getAllUsers(req: Request, res: Response) {
+  try {
+    const [users] = await pool.query<User[]>(
+      'SELECT id, email, role, created_at FROM users ORDER BY created_at DESC'
+    );
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+}

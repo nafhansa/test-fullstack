@@ -1,34 +1,78 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../../../services/api';
 
-interface Transaction {
-  id: string;
-  tanggal: string;
-  produk: string;
-  total: string;
-  status: 'Menunggu Pembayaran' | 'Sudah Dibayar' | 'Expired';
+interface TransactionItem {
+  product_name: string;
+  quantity: number;
+  price_snapshot: number;
 }
 
-const dummyTransactions: Transaction[] = [
-  { id: 'TXD123', tanggal: '27/10/2025', produk: 'Pemutihan NIK & Dokumen (100 Hit)', total: '500,000', status: 'Menunggu Pembayaran' },
-  { id: 'TXD124', tanggal: '25/10/2025', produk: 'Pemutihan NIK & Dokumen (50 Hit)', total: '250,000', status: 'Sudah Dibayar' },
-  { id: 'TXD125', tanggal: '24/10/2025', produk: 'Pemutihan NIK & Dokumen (200 Hit)', total: '1,000,000', status: 'Expired' },
-];
+interface Transaction {
+  id: number;
+  kode_billing: string;
+  total_amount: number;
+  status: 'BELUM_DIBAYAR' | 'SUDAH_DIBAYAR' | 'EXPIRED';
+  expired_at: string;
+  created_at: string;
+  items: TransactionItem[];
+}
 
 export default function HistoryPage() {
-  const [transactions] = useState<Transaction[]>(dummyTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('Semua');
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/transactions/history');
+      setTransactions(response.data);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const statusMap: Record<string, string> = {
+    'Semua': 'Semua',
+    'Menunggu Pembayaran': 'BELUM_DIBAYAR',
+    'Sudah Dibayar': 'SUDAH_DIBAYAR',
+    'Expired': 'EXPIRED'
+  };
 
   const filteredTransactions = filter === 'Semua' 
     ? transactions 
-    : transactions.filter(t => t.status === filter);
+    : transactions.filter(t => t.status === statusMap[filter]);
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'Menunggu Pembayaran': return 'bg-yellow-100 text-yellow-700';
-      case 'Sudah Dibayar': return 'bg-green-100 text-green-700';
-      case 'Expired': return 'bg-red-100 text-red-700';
+      case 'BELUM_DIBAYAR': return 'bg-yellow-100 text-yellow-700';
+      case 'SUDAH_DIBAYAR': return 'bg-green-100 text-green-700';
+      case 'EXPIRED': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch(status) {
+      case 'BELUM_DIBAYAR': return 'Menunggu Pembayaran';
+      case 'SUDAH_DIBAYAR': return 'Sudah Dibayar';
+      case 'EXPIRED': return 'Expired';
+      default: return status;
+    }
+  };
+
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(num);
   };
 
   return (
@@ -85,25 +129,49 @@ export default function HistoryPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTransactions.map((transaction, index) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{transaction.id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{transaction.tanggal}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{transaction.produk}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{transaction.total}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                        {transaction.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <button className="text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded">
-                        📄 Detail
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      Memuat data...
                     </td>
                   </tr>
-                ))}
+                ) : filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      Belum ada transaksi.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((transaction, index) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">{transaction.kode_billing}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {new Date(transaction.created_at).toLocaleDateString('id-ID')}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {transaction.items.map((item, i) => (
+                          <div key={i}>
+                            {item.product_name} ({item.quantity} Hit)
+                          </div>
+                        ))}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {formatRupiah(transaction.total_amount)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                          {getStatusLabel(transaction.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="text-xs text-gray-500">
+                          Exp: {new Date(transaction.expired_at).toLocaleString('id-ID')}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

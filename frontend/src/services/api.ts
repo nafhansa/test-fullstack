@@ -21,31 +21,13 @@ api.interceptors.request.use((config) => {
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    if (email === "admin" && password === "admin") {
-      return {
-        token: "fake-jwt-token-admin",
-        user: { id: 1, email: "admin@store.com", role: "ADMIN" }
-      };
-    }
-
-    if (email === "user" && password === "user") {
-      return {
-        token: "fake-jwt-token-user",
-        user: { id: 2, email: "user@store.com", role: "PEMBELI" }
-      };
-    }
-
-    throw new Error("Username atau password salah");
+    const response = await api.post('/auth/login', { email, password });
+    return response.data;
   },
 
-  // FIX 2: Tambahkan underscore (_) agar TypeScript tidak komplain variabel tidak terpakai
-  // ATAU console.log variabel tersebut
   register: async (email: string, password: string, role: 'ADMIN' | 'PEMBELI') => {
-    console.log("Mock Register:", email, password, role); // Biar variabelnya 'terpakai'
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { success: true };
+    const response = await api.post('/auth/register', { email, password, role });
+    return response.data;
   }
 };
 

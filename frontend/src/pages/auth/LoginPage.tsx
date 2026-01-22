@@ -36,12 +36,12 @@ return (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-2 ml-1">
-              Username
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               required
-              placeholder="Masukkan username"
+              placeholder="admin@test.com"
               className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
