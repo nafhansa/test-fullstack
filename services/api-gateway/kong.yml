@@ -1,0 +1,145 @@
+_format_version: "3.0"
+
+# Services Definition (Backend Microservices)
+services:
+  - name: auth-service
+    url: http://host.docker.internal:3001
+    routes:
+      - name: auth-register
+        paths:
+          - /api/auth/register
+        methods:
+          - POST
+        strip_path: true
+        
+      - name: auth-login
+        paths:
+          - /api/auth/login
+        methods:
+          - POST
+        strip_path: true
+
+  - name: product-service
+    url: http://host.docker.internal:3002
+    routes:
+      - name: products-list
+        paths:
+          - /api/products
+        methods:
+          - GET
+        strip_path: true
+        
+      - name: products-detail
+        paths:
+          - /api/products/(?<id>[0-9]+)
+        methods:
+          - GET
+        strip_path: true
+        
+      - name: products-create
+        paths:
+          - /api/products
+        methods:
+          - POST
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+        
+      - name: products-update
+        paths:
+          - /api/products/(?<id>[0-9]+)
+        methods:
+          - PUT
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+        
+      - name: products-delete
+        paths:
+          - /api/products/(?<id>[0-9]+)
+        methods:
+          - DELETE
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+
+  - name: transaction-service
+    url: http://host.docker.internal:3003
+    routes:
+      - name: transactions-create
+        paths:
+          - /api/transactions
+        methods:
+          - POST
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+        
+      - name: transactions-list
+        paths:
+          - /api/transactions
+        methods:
+          - GET
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+        
+      - name: transactions-detail
+        paths:
+          - /api/transactions/(?<id>[0-9]+)
+        methods:
+          - GET
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+        
+      - name: transactions-pay
+        paths:
+          - /api/transactions/pay
+        methods:
+          - POST
+        strip_path: true
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+
+# Global Plugins
+plugins:
+  - name: correlation-id
+    config:
+      header_name: X-Request-ID
+      generator: uuid
+      echo_downstream: true
+      
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - X-Internal-Key:supersecretkey123
