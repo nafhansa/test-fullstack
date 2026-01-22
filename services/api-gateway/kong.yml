@@ -3,132 +3,138 @@ _format_version: "3.0"
 # Services Definition (Backend Microservices)
 services:
   - name: auth-service
-    url: http://172.17.0.1:3001
+    url: http://auth-service:3001
     routes:
       - name: auth-register
         paths:
           - /api/auth/register
         methods:
           - POST
-        strip_path: true
+        strip_path: false
         
       - name: auth-login
         paths:
           - /api/auth/login
         methods:
           - POST
-        strip_path: true
+        strip_path: false
 
   - name: product-service
-    url: http://172.17.0.1:3002
+    url: http://product-service:3002
     routes:
       - name: products-list
         paths:
           - /api/products
         methods:
           - GET
-        strip_path: true
+        strip_path: false
         
       - name: products-detail
         paths:
           - /api/products/(?<id>[0-9]+)
         methods:
           - GET
-        strip_path: true
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: products-create
         paths:
           - /api/products
         methods:
           - POST
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: products-update
         paths:
           - /api/products/(?<id>[0-9]+)
         methods:
           - PUT
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: products-delete
         paths:
           - /api/products/(?<id>[0-9]+)
         methods:
           - DELETE
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
 
   - name: transaction-service
-    url: http://172.17.0.1:3003
+    url: http://transaction-service:3003
     routes:
       - name: transactions-create
         paths:
           - /api/transactions
         methods:
           - POST
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: transactions-list
         paths:
           - /api/transactions
         methods:
           - GET
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: transactions-detail
         paths:
           - /api/transactions/(?<id>[0-9]+)
         methods:
           - GET
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
         
       - name: transactions-pay
         paths:
           - /api/transactions/pay
         methods:
           - POST
-        strip_path: true
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
               add:
                 headers:
-                  - X-INTERNAL-KEY:${INTERNAL_SECRET_KEY}
+                  - X-INTERNAL-KEY:supersecretkey123
 
 # Global Plugins
 plugins:

@@ -1,0 +1,246 @@
+openapi: 3.0.0
+info:
+  title: Transaction Service API
+  description: Transaction and checkout management service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3003
+    description: Local development
+  - url: http://localhost:3000
+    description: Via API Gateway
+
+tags:
+  - name: Transactions
+    description: Transaction operations
+
+paths:
+  /api/transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction (checkout)
+      description: User creates new transaction with product items
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - productId
+                      - qty
+                    properties:
+                      productId:
+                        type: integer
+                        example: 1
+                      qty:
+                        type: integer
+                        minimum: 1
+                        example: 2
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Transaction created successfully
+                  transaction:
+                    $ref: '#/components/schemas/TransactionSummary'
+        '400':
+          description: Bad request
+        '404':
+          description: Product not found
+
+    get:
+      tags:
+        - Transactions
+      summary: Get all transactions
+      description: List user transactions
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+
+  /api/transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction by ID
+      description: Get transaction details with items
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionWithItems'
+        '404':
+          description: Transaction not found
+
+  /api/transactions/pay:
+    post:
+      tags:
+        - Transactions
+      summary: Process payment
+      description: Admin only - mark transaction as paid
+      security:
+        - BearerAuth: []
+        - InternalKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - kode_billing
+              properties:
+                kode_billing:
+                  type: string
+                  example: TRX-3730
+      responses:
+        '200':
+          description: Payment successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Payment successful
+                  kode_billing:
+                    type: string
+                    example: TRX-3730
+        '400':
+          description: Bad request - Already paid or expired
+        '404':
+          description: Transaction not found
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+
+components:
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        kode_billing:
+          type: string
+          example: TRX-3730
+        user_id:
+          type: integer
+          example: 2
+        total_amount:
+          type: number
+          format: decimal
+          example: 30000000
+        status:
+          type: string
+          enum: [BELUM_DIBAYAR, SUDAH_DIBAYAR, EXPIRED]
+          example: BELUM_DIBAYAR
+        created_at:
+          type: string
+          format: date-time
+        expired_at:
+          type: string
+          format: date-time
+
+    TransactionSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        kode_billing:
+          type: string
+          example: TRX-3730
+        total_amount:
+          type: number
+          example: 30000000
+        status:
+          type: string
+          example: BELUM_DIBAYAR
+        expired_at:
+          type: string
+          format: date-time
+
+    TransactionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        transaction_id:
+          type: integer
+        product_id:
+          type: integer
+        product_name:
+          type: string
+          example: Laptop ASUS ROG
+        price_per_item:
+          type: number
+          example: 15000000
+        quantity:
+          type: integer
+          example: 2
+
+    TransactionWithItems:
+      allOf:
+        - $ref: '#/components/schemas/Transaction'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/TransactionItem'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    InternalKey:
+      type: apiKey
+      in: header
+      name: X-INTERNAL-KEY

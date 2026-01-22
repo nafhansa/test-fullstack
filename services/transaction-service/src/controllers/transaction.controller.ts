@@ -32,15 +32,26 @@ export async function createTransaction(req: Request, res: Response) {
   
   try {
     const { items } = req.body;
-    const userId = req.headers['x-user-id']; // From Kong Gateway
+    
+    // Get user ID from JWT token in Authorization header
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let userId: number;
+    
+    try {
+      const decoded: any = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userId = decoded.id;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
 
     // Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Items array is required' });
-    }
-
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
     }
 
     await connection.beginTransaction();
@@ -67,7 +78,7 @@ export async function createTransaction(req: Request, res: Response) {
       try {
         // Call Product Service with internal key
         const response = await axios.get(
-          `${process.env.PRODUCT_SERVICE_URL}/products/${productId}`,
+          `${process.env.PRODUCT_SERVICE_URL}/api/products/${productId}`,
           {
             headers: {
               'X-INTERNAL-KEY': process.env.INTERNAL_SECRET_KEY
