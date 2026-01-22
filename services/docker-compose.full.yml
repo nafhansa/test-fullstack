@@ -119,11 +119,15 @@ services:
       INTERNAL_SECRET_KEY: supersecretkey123
       PRODUCT_SERVICE_URL: http://product-service:3002
       PORT: 3003
+      AUTH_DB_HOST: mysql-auth 
+      AUTH_DB_NAME: db_auth
     depends_on:
       mysql-transaction:
         condition: service_healthy
       product-service:
         condition: service_started
+      mysql-auth: 
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
