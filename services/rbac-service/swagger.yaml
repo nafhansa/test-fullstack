@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  title: RBAC Service API
+  description: Role-Based Access Control Service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3004
+    description: Direct Service (Internal)
+  - url: http://localhost:3000
+    description: Via API Gateway (Public)
+
+tags:
+  - name: RBAC
+    description: User management with role-based access
+
+paths:
+  /users:
+    get:
+      tags:
+        - RBAC
+      summary: List all users
+      security:
+        - InternalKey: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /add_users:
+    post:
+      tags:
+        - RBAC
+      summary: Create new user
+      security:
+        - InternalKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: password123
+                role:
+                  type: string
+                  enum: [ADMIN, PEMBELI]
+                  default: PEMBELI
+                status:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: User created
+        '409':
+          description: Email already exists
+
+  /update_users/{id}:
+    put:
+      tags:
+        - RBAC
+      summary: Update user
+      security:
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADMIN, PEMBELI]
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated
+        '404':
+          description: User not found
+
+  /delete_users/{id}:
+    delete:
+      tags:
+        - RBAC
+      summary: Delete user
+      security:
+        - InternalKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deleted
+        '404':
+          description: User not found
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        status:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    InternalKey:
+      type: apiKey
+      in: header
+      name: X-INTERNAL-KEY
