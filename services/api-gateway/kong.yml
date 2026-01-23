@@ -1,10 +1,10 @@
 _format_version: "3.0"
 
-# Services Definition (Backend Microservices)
 services:
   - name: auth-service
     url: http://auth-service:3001
     routes:
+      # Public routes (no auth needed)
       - name: auth-register
         paths:
           - /api/auth/register
@@ -21,6 +21,36 @@ services:
           - OPTIONS
         strip_path: false
       
+      # Protected routes (need JWT)
+      - name: auth-me
+        paths:
+          - /api/auth/me
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: auth-refresh-token
+        paths:
+          - /api/auth/refresh-token
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      # Internal routes (admin only)
       - name: auth-users
         paths:
           - /api/auth/users
@@ -193,6 +223,59 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
+
+  - name: rbac-service
+    url: http://rbac-service:3004
+    routes:
+      - name: rbac-get-users
+        paths:
+          - /api/users
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: rbac-create-user
+        paths:
+          - /api/users
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: rbac-update-user
+        paths:
+          - ~/api/users/(\d+)$
+        methods:
+          - PUT
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+      
+      - name: rbac-delete-user
+        paths:
+          - ~/api/users/(\d+)$
+        methods:
+          - DELETE
+          - OPTIONS
+        strip_path: false
         plugins:
           - name: request-transformer
             config:
@@ -215,26 +298,8 @@ plugins:
         - OPTIONS
       headers:
         - Accept
-        - Accept-Version
-        - Content-Length
-        - Content-MD5
         - Content-Type
-        - Date
         - Authorization
-        - X-Auth-Token
-      exposed_headers:
-        - X-Auth-Token
+        - X-INTERNAL-KEY
       credentials: true
       max_age: 3600
-
-  - name: correlation-id
-    config:
-      header_name: X-Request-ID
-      generator: uuid
-      echo_downstream: true
-      
-  - name: request-transformer
-    config:
-      add:
-        headers:
-          - X-Internal-Key:supersecretkey123

@@ -52,7 +52,29 @@ services:
       retries: 10
     networks:
       - app-network
-
+  # RBAC Service (ADD THIS)
+  rbac-service:
+    build:
+      context: ./rbac-service
+      dockerfile: Dockerfile
+    container_name: rbac-service
+    ports:
+      - "3004:3004"
+    environment:
+      AUTH_DB_HOST: mysql-auth
+      AUTH_DB_PORT: 3306
+      AUTH_DB_NAME: db_auth
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      INTERNAL_SECRET_KEY: supersecretkey123
+      PORT: 3004
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    
   # Auth Service
   auth-service:
     build:

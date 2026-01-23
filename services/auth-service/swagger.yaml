@@ -2,15 +2,13 @@ openapi: 3.0.0
 info:
   title: Auth Service API
   description: Authentication and user management service
-  version: 1.0.0
-  contact:
-    name: API Support
+  version: 2.0.0
 
 servers:
   - url: http://localhost:3001
-    description: Local development
+    description: Direct Service (Internal)
   - url: http://localhost:3000
-    description: Via API Gateway
+    description: Via API Gateway (Public)
 
 tags:
   - name: Authentication
@@ -22,7 +20,6 @@ paths:
       tags:
         - Authentication
       summary: Register new user
-      description: Create a new user account (Admin or Pembeli)
       requestBody:
         required: true
         content:
@@ -30,22 +27,25 @@ paths:
             schema:
               type: object
               required:
+                - name
                 - email
                 - password
               properties:
+                name:
+                  type: string
+                  example: John Doe
                 email:
                   type: string
                   format: email
-                  example: admin@test.com
+                  example: user@test.com
                 password:
                   type: string
                   minLength: 6
-                  example: admin123
+                  example: user123
                 role:
                   type: string
                   enum: [ADMIN, PEMBELI]
                   default: PEMBELI
-                  example: ADMIN
       responses:
         '201':
           description: User registered successfully
@@ -60,17 +60,12 @@ paths:
                   userId:
                     type: integer
                     example: 1
-        '400':
-          description: Bad request - Missing required fields
-        '409':
-          description: Conflict - Email already registered
 
   /api/auth/login:
     post:
       tags:
         - Authentication
       summary: User login
-      description: Authenticate user and receive JWT token
       requestBody:
         required: true
         content:
@@ -83,7 +78,6 @@ paths:
               properties:
                 email:
                   type: string
-                  format: email
                   example: admin@test.com
                 password:
                   type: string
@@ -102,7 +96,7 @@ paths:
                   user:
                     type: object
                     properties:
-                      id:
+                      user_id:
                         type: integer
                         example: 1
                       email:
@@ -110,34 +104,66 @@ paths:
                         example: admin@test.com
                       role:
                         type: string
-                        enum: [ADMIN, PEMBELI]
                         example: ADMIN
-        '401':
-          description: Unauthorized - Invalid credentials
 
-  /health:
+  /api/auth/me:
     get:
       tags:
-        - Health
-      summary: Health check
-      description: Check if service is running
+        - Authentication
+      summary: Get current user info
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Service is healthy
+          description: User data
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  user_id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
                   status:
-                    type: string
-                    example: ok
-                  service:
-                    type: string
-                    example: auth-service
-                  timestamp:
+                    type: boolean
+                  created_at:
                     type: string
                     format: date-time
+
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Expired or about-to-expire token
+      responses:
+        '200':
+          description: New token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
 
 components:
   securitySchemes:
