@@ -1,3 +1,4 @@
+// services/transaction-service/src/database/migrate.ts
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
@@ -27,11 +28,12 @@ async function migrate() {
 
     console.log(`🚀 Starting Migration for ${dbName}...`);
     
-    // 1. Create DB & Tables
+    // 1. Create DB
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
     await connection.query(`USE ${dbName}`);
 
-    console.log('Creating transactions tables...');
+    // ===== TABEL TRANSAKSI  =====
+    console.log('Creating transactions table...');
     await connection.query(`
       CREATE TABLE IF NOT EXISTS transactions (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -44,6 +46,24 @@ async function migrate() {
       )
     `);
 
+    // ===== TABEL KERANJANG ===== 
+    console.log('Creating keranjang table...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS keranjang (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        transaksi_id INT NULL,
+        user_id INT NOT NULL,
+        produk_id INT NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        harga DECIMAL(10, 2) NOT NULL,
+        quantity INT DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (transaksi_id) REFERENCES transactions(id) ON DELETE CASCADE
+      )
+    `);
+
+    // ===== TABEL TRANSACTION_ITEMS (Existing) =====
+    console.log('Creating transaction_items table...');
     await connection.query(`
       CREATE TABLE IF NOT EXISTS transaction_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -71,7 +91,7 @@ async function migrate() {
       try {
         authConnection = await mysql.createConnection(AUTH_DB_CONFIG);
         const [users]: any = await authConnection.query(
-          "SELECT id, email, name FROM users WHERE role = 'PEMBELI'"
+          "SELECT id, email, name FROM users WHERE id IN (SELECT user_id FROM users_role WHERE role = 'PEMBELI')"
         );
         
         if (!users || users.length === 0) {
@@ -114,10 +134,8 @@ async function migrate() {
           console.log(`✅ Seeded transactions for ${users.length} users.`);
         }
       } catch (authError) {
-        // --- PERBAIKAN DI SINI ---
-        // Kita cast authError sebagai 'any' agar properti .message bisa diakses
         const msg = (authError as any).message; 
-        console.error('⚠️ Could not connect to Auth DB for seeding. Ensure mysql-auth is ready.', msg);
+        console.error('⚠️ Could not connect to Auth DB for seeding.', msg);
       } finally {
         if (authConnection) await authConnection.end();
       }

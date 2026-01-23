@@ -1,5 +1,8 @@
+// services/transaction-service/src/routes/transaction.routes.ts
 import { Router } from 'express';
 import {
+  addToCart,
+  getCart,
   createTransaction,
   getAllTransactions,
   getTransactionById,
@@ -9,10 +12,15 @@ import { internalAuth } from '../middleware/internalAuth';
 
 const router = Router();
 
-// All endpoints require internal auth
-router.post('/checkout', internalAuth, createTransaction); // Alias for frontend
-router.post('/', internalAuth, createTransaction);
-router.get('/history', internalAuth, getAllTransactions); // Alias for frontend
+// ===== CART ENDPOINTS =====
+router.post('/cart/add', internalAuth, addToCart);     
+router.get('/cart/:user_id', internalAuth, getCart);  
+router.get('/cart', internalAuth, getCart);            
+
+// ===== TRANSACTION ENDPOINTS =====
+router.post('/checkout', internalAuth, createTransaction); 
+router.post('/', internalAuth, createTransaction);     
+router.get('/history', internalAuth, getAllTransactions); 
 router.get('/', internalAuth, getAllTransactions);
 router.get('/:id', internalAuth, getTransactionById);
 router.post('/pay', internalAuth, payTransaction);

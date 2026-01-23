@@ -1,10 +1,11 @@
 _format_version: "3.0"
 
 services:
+  # ===== AUTH SERVICE =====
   - name: auth-service
     url: http://auth-service:3001
     routes:
-      # Public routes (no auth needed)
+      # Public routes
       - name: auth-register
         paths:
           - /api/auth/register
@@ -21,7 +22,7 @@ services:
           - OPTIONS
         strip_path: false
       
-      # Protected routes (need JWT)
+      # ✅ FIX: Protected routes (need JWT)
       - name: auth-me
         paths:
           - /api/auth/me
@@ -50,7 +51,7 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
       
-      # Internal routes (admin only)
+      # Internal routes
       - name: auth-users
         paths:
           - /api/auth/users
@@ -65,10 +66,10 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
 
+  # ===== PRODUCT SERVICE =====
   - name: product-service
     url: http://product-service:3002
     routes:
-      # Routes with ID parameters (higher priority)
       - name: products-detail
         paths:
           - ~/api/products/\d+$
@@ -111,7 +112,6 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
       
-      # Routes without ID parameters (lower priority)
       - name: products-list
         paths:
           - /api/products
@@ -134,10 +134,44 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
 
+  # ===== TRANSACTION SERVICE =====
   - name: transaction-service
     url: http://transaction-service:3003
     routes:
-      # Specific routes first (checkout, history, pay)
+      # ✅ FIX: Cart endpoints (BARU - Sesuai PDF)
+      - name: cart-add
+        paths:
+          - /api/cart/add
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+              replace:
+                uri: /api/transactions/cart/add
+      
+      - name: cart-get
+        paths:
+          - ~/api/cart(/\d+)?$
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-INTERNAL-KEY:supersecretkey123
+              replace:
+                uri: /api/transactions/cart
+      
+      # Checkout & History
       - name: transactions-checkout
         paths:
           - /api/transactions/checkout
@@ -180,7 +214,6 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
       
-      # Detail route with regex (lower priority)
       - name: transactions-detail
         paths:
           - ~/api/transactions/\d+$
@@ -195,7 +228,6 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
       
-      # Generic routes (lowest priority)
       - name: transactions-create
         paths:
           - /api/transactions
@@ -224,6 +256,7 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
 
+  # ===== RBAC SERVICE ===== ✅ FIX: Endpoint sesuai PDF
   - name: rbac-service
     url: http://rbac-service:3004
     routes:
@@ -233,7 +266,7 @@ services:
         methods:
           - GET
           - OPTIONS
-        strip_path: false
+        strip_path: true  # /api/users → /users
         plugins:
           - name: request-transformer
             config:
@@ -241,7 +274,7 @@ services:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
       
-      - name: rbac-create-user
+      - name: rbac-add-user
         paths:
           - /api/users
         methods:
@@ -254,6 +287,8 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
+              replace:
+                uri: /add_users  # ✅ Sesuai PDF
       
       - name: rbac-update-user
         paths:
@@ -268,6 +303,8 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
+              replace:
+                uri: /update_users/$1  # ✅ Sesuai PDF
       
       - name: rbac-delete-user
         paths:
@@ -282,6 +319,8 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
+              replace:
+                uri: /delete_users/$1  # ✅ Sesuai PDF
 
 # Global Plugins
 plugins:
