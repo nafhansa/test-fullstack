@@ -17,6 +17,9 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null); 
+  const [showDeleteModal, setShowDeleteModal] = useState(false); 
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -58,9 +61,15 @@ export default function UsersPage() {
     setError('');
 
     try {
-      await api.post('/auth/register', formData);
+      if (editingUser) {
+        const rbacPayload = { ...formData, status: formData.status === 'ACTIVE' };
+        await api.put(`/users/${editingUser.id}`, rbacPayload);
+      } else {
+        await api.post('/auth/register', formData);
+      }
       await fetchUsers();
       setShowModal(false);
+      setEditingUser(null);
       setFormData({ name: '', username: '', email: '', password: '', role: 'PEMBELI', status: 'ACTIVE' });
     } catch (err: any) {
       console.error('Error creating user:', err);
@@ -68,6 +77,47 @@ export default function UsersPage() {
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name || '',
+      username: user.username || '',
+      email: user.email || '',
+      password: '',
+      role: user.role || 'PEMBELI',
+      status: user.status || 'ACTIVE',
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (id: number) => {
+    setUserToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    setSubmitLoading(true);
+    setError('');
+    try {
+    // delete via RBAC route so Kong injects X-INTERNAL-KEY
+    await api.delete(`/users/${userToDelete}`);
+      await fetchUsers();
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting user:', err);
+      setError(err.response?.data?.error || 'Gagal menghapus user');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setUserToDelete(null);
+    setShowDeleteModal(false);
   };
 
   return (
@@ -79,7 +129,7 @@ export default function UsersPage() {
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-medium text-gray-700 mb-4">Cari User</h2>
-        <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center">
           <input
             type="text"
             placeholder="Ketik nama atau username..."
@@ -88,7 +138,11 @@ export default function UsersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingUser(null);
+              setFormData({ name: '', username: '', email: '', password: '', role: 'PEMBELI', status: 'ACTIVE' });
+              setShowModal(true);
+            }}
             className="bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-50 px-6 py-2 rounded-lg flex items-center gap-2 font-medium transition-all"
           >
             <img src="/icons/add.svg" alt="Add" className="w-6 h-6" />
@@ -139,6 +193,7 @@ export default function UsersPage() {
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
                           <button
+                            onClick={() => handleEdit(user)}
                             className="w-8 h-8 flex items-center justify-center rounded border border-blue-400 text-blue-500 hover:bg-blue-50 transition-colors"
                             title="Edit"
                           >
@@ -147,6 +202,7 @@ export default function UsersPage() {
                             </svg>
                           </button>
                           <button
+                            onClick={() => handleDeleteClick(user.id)}
                             className="w-8 h-8 flex items-center justify-center rounded border border-red-400 text-red-500 hover:bg-red-50 transition-colors"
                             title="Delete"
                           >
@@ -170,13 +226,13 @@ export default function UsersPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-9999 p-4 overflow-y-auto">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
               <div className="flex items-center justify-between p-6 border-b bg-blue-600 border-gray-200 rounded-t-lg">
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center">
                     <img src="/icons/add.svg" alt="Wallet" className="w-20 h-20" />
                   </div>
-                  <h2 className="text-3xl font-bold text-white">Tambah User Baru</h2>
+                  <h2 className="text-3xl font-bold text-white">{editingUser ? 'Edit User' : 'Tambah User Baru'}</h2>
                 </div>
-                <button onClick={() => setShowModal(false)} className="text-gray-300 hover:text-gray-300 text-3xl leading-none">
+                <button onClick={() => { setShowModal(false); setEditingUser(null); }} className="text-gray-300 hover:text-gray-300 text-3xl leading-none">
                   ✕
                 </button>
               </div>
@@ -282,6 +338,7 @@ export default function UsersPage() {
                     type="button"
                     onClick={() => {
                       setShowModal(false);
+                      setEditingUser(null);
                       setError('');
                     }}
                     disabled={submitLoading}
@@ -311,6 +368,21 @@ export default function UsersPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>,
+          document.body
+        )}
+      {showDeleteModal &&
+        createPortal(
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-9999 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+              <h3 className="text-lg font-bold mb-4">Konfirmasi Hapus</h3>
+              <p className="text-sm text-gray-700 mb-6">Apakah Anda yakin ingin menghapus user ini? Aksi ini tidak bisa dibatalkan.</p>
+              {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
+              <div className="flex gap-3 justify-end">
+                <button onClick={cancelDelete} disabled={submitLoading} className="px-4 py-2 rounded border bg-gray-100">Batal</button>
+                <button onClick={confirmDelete} disabled={submitLoading} className="px-4 py-2 rounded bg-red-600 text-white">{submitLoading ? 'Menghapus...' : 'Hapus'}</button>
+              </div>
             </div>
           </div>,
           document.body

@@ -303,8 +303,7 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
-              replace:
-                uri: /update_users/$1  # ✅ Sesuai PDF
+              # no URI replace: forward original /api/users/:id to upstream
       
       - name: rbac-delete-user
         paths:
@@ -319,8 +318,7 @@ services:
               add:
                 headers:
                   - X-INTERNAL-KEY:supersecretkey123
-              replace:
-                uri: /delete_users/$1  # ✅ Sesuai PDF
+              # no URI replace: forward original /api/users/:id to upstream
 
 # Global Plugins
 plugins:
