@@ -1,3 +1,266 @@
+#!/usr/bin/env bash
+
+# Clean, readable microservices integration test script
+# Runs through: Auth -> RBAC -> Products -> Cart -> Transactions
+
+set -u
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+API_URL="http://localhost:3000"
+
+# Counters
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
+
+# Shared test data
+ADMIN_TOKEN=""
+USER_TOKEN=""
+PRODUCT_ID=""
+NEW_PRODUCT_ID=""
+RBAC_USER_ID=""
+TRANSACTION_ID=""
+BILLING_CODE=""
+
+print_header() {
+  printf "\n${CYAN}========================================${NC}\n"
+  printf "${CYAN}%s${NC}\n" "$1"
+  printf "${CYAN}========================================${NC}\n"
+}
+
+print_subheader() {
+  printf "\n${BLUE}▶ %s${NC}\n" "$1"
+}
+
+run_test() {
+  local name="$1"; shift
+  local response="$1"; shift
+  local expected="$1"; shift || true
+
+  ((TOTAL_TESTS++))
+
+  if [ -n "$expected" ] && echo "$response" | grep -q "$expected"; then
+    printf "${GREEN}✅ %s: PASSED${NC}\n" "$name"
+    ((PASSED_TESTS++))
+    return 0
+  else
+    printf "${RED}❌ %s: FAILED${NC}\n" "$name"
+    if [ -n "$response" ]; then
+      printf "${YELLOW}Response: %s${NC}\n" "${response}" | sed -n '1,6p'
+    fi
+    ((FAILED_TESTS++))
+    return 1
+  fi
+}
+
+# Helper for curl requests with JSON and optional Authorization
+http() {
+  local method="$1"; shift
+  local url="$1"; shift
+  local token=""; local data="";
+  while (("$#")); do
+    case "$1" in
+      -H) shift; ;; # accept raw headers if needed
+      --token) token="$2"; shift 2; ;;
+      --data) data="$2"; shift 2; ;;
+      *) shift; ;;
+    #!/usr/bin/env bash
+
+    # Clean, readable microservices integration test script
+    # Runs through: Auth -> RBAC -> Products -> Cart -> Transactions
+
+    set -u
+
+    # Colors
+    GREEN='\033[0;32m'
+    RED='\033[0;31m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m'
+
+    API_URL="http://localhost:3000"
+
+    # Counters
+    TOTAL_TESTS=0
+    PASSED_TESTS=0
+    FAILED_TESTS=0
+
+    # Shared test data
+    ADMIN_TOKEN=""
+    USER_TOKEN=""
+    PRODUCT_ID=""
+    NEW_PRODUCT_ID=""
+    RBAC_USER_ID=""
+    TRANSACTION_ID=""
+    BILLING_CODE=""
+
+    print_header() {
+        printf "\n${CYAN}========================================${NC}\n"
+        printf "${CYAN}%s${NC}\n" "$1"
+        printf "${CYAN}========================================${NC}\n"
+    }
+
+    print_subheader() {
+        printf "\n${BLUE}▶ %s${NC}\n" "$1"
+    }
+
+    run_test() {
+        local name="$1"; shift
+        local response="$1"; shift
+        local expected="$1"; shift || true
+
+        ((TOTAL_TESTS++))
+
+        if [ -n "$expected" ] && echo "$response" | grep -q "$expected"; then
+            printf "${GREEN}✅ %s: PASSED${NC}\n" "$name"
+            ((PASSED_TESTS++))
+            return 0
+        else
+            printf "${RED}❌ %s: FAILED${NC}\n" "$name"
+            if [ -n "$response" ]; then
+                printf "${YELLOW}Response: %s${NC}\n" "${response}" | sed -n '1,6p'
+            fi
+            ((FAILED_TESTS++))
+            return 1
+        fi
+    }
+
+    # Helper for curl requests with JSON and optional Authorization
+    http() {
+        local method="$1"; shift
+        local url="$1"; shift
+        local token=""; local data="";
+        while (("$#")); do
+            case "$1" in
+                -H) shift; ;; # accept raw headers if needed
+                --token) token="$2"; shift 2; ;;
+                --data) data="$2"; shift 2; ;;
+                *) shift; ;;
+            esac
+        done
+
+        local auth_header=( )
+        if [ -n "$token" ]; then
+            auth_header=( -H "Authorization: Bearer ${token}" )
+        fi
+
+        if [ -n "$data" ]; then
+            curl -s -X "$method" "$url" -H "Content-Type: application/json" "${auth_header[@]}" -d "$data"
+        else
+            curl -s -X "$method" "$url" "${auth_header[@]}"
+        fi
+    }
+
+    # ------------------ PHASE 1: AUTH ------------------
+    test_auth_service() {
+        print_header "PHASE 1: AUTH"
+
+        # Login as admin first (needed to create RBAC users)
+        print_subheader "Login as admin"
+        LOGIN_RESP=$(http POST "$API_URL/api/auth/login" --data '{ "email": "admin@test.com", "password": "admin123" }')
+        ADMIN_TOKEN=$(echo "$LOGIN_RESP" | jq -r '.token')
+        if [ -z "$ADMIN_TOKEN" ] || [ "$ADMIN_TOKEN" = "null" ]; then
+            run_test "Admin Login" "$LOGIN_RESP" "token" || { printf "${RED}Admin token required. Aborting tests.${NC}\n"; exit 1; }
+        else
+            run_test "Admin Login" "$LOGIN_RESP" "token"
+        fi
+
+        # Create a fresh test user via RBAC (ensures active account and predictable credentials)
+        print_subheader "Create test user via RBAC (Admin)"
+        RAND=$(date +%s)
+        TEST_EMAIL="test-${RAND}@example.com"
+        TEST_PASS="test123"
+        RBAC_PAYLOAD=$(cat <<EOF
+    { "name":"Test User ${RAND}", "username":"testuser${RAND}", "email":"${TEST_EMAIL}", "password":"${TEST_PASS}", "role":"PEMBELI", "status":"ACTIVE" }
+    EOF
+    )
+        CREATE_RBAC_RESP=$(http POST "$API_URL/api/users" --token "$ADMIN_TOKEN" --data "$RBAC_PAYLOAD")
+        run_test "Create RBAC User" "$CREATE_RBAC_RESP" "successfully"
+        RBAC_USER_ID=$(echo "$CREATE_RBAC_RESP" | jq -r '.userId' 2>/dev/null || true)
+
+        # Now login as that user to obtain USER_TOKEN (used for cart/transaction tests)
+        print_subheader "Login as test user"
+        USER_LOGIN_RESP=$(http POST "$API_URL/api/auth/login" --data "{ \"email\": \"${TEST_EMAIL}\", \"password\": \"${TEST_PASS}\" }")
+        USER_TOKEN=$(echo "$USER_LOGIN_RESP" | jq -r '.token' 2>/dev/null || true)
+        if [ -z "$USER_TOKEN" ] || [ "$USER_TOKEN" = "null" ]; then
+            # If login failed, show response and continue (some environments may auto-provision users)
+            run_test "User Login" "$USER_LOGIN_RESP" "token" || true
+        else
+            run_test "User Login" "$USER_LOGIN_RESP" "token"
+        fi
+
+        # Admin /me and token refresh checks
+        print_subheader "Get /me (admin)"
+        ME_RESP=$(http GET "$API_URL/api/auth/me" --token "$ADMIN_TOKEN")
+        run_test "Get Me" "$ME_RESP" "email"
+
+        print_subheader "Refresh Token (admin)"
+        REFRESH_RESP=$(http POST "$API_URL/api/auth/refresh-token" --data "{ \"token\": \"$ADMIN_TOKEN\" }")
+        NEW_TOKEN=$(echo "$REFRESH_RESP" | jq -r '.token' 2>/dev/null || true)
+        if [ -n "$NEW_TOKEN" ] && [ "$NEW_TOKEN" != "null" ]; then
+            run_test "Refresh Token" "$REFRESH_RESP" "token"
+        else
+            run_test "Refresh Token" "$REFRESH_RESP" "token" || true
+        fi
+    }
+  fi
+
+  print_subheader "Get transaction history"
+  HISTORY_RESP=$(http GET "$API_URL/api/transactions/history" --token "$USER_TOKEN")
+  run_test "Transaction History" "$HISTORY_RESP" "kode_billing"
+
+  if [ -n "$TRANSACTION_ID" ] && [ "$TRANSACTION_ID" != "null" ]; then
+    print_subheader "Get transaction detail"
+    DETAIL_RESP=$(http GET "$API_URL/api/transactions/$TRANSACTION_ID" --token "$USER_TOKEN")
+    run_test "Get Transaction Detail" "$DETAIL_RESP" "kode_billing"
+  fi
+
+  if [ -n "$BILLING_CODE" ] && [ "$BILLING_CODE" != "null" ]; then
+    print_subheader "Pay transaction (admin)"
+    PAY_RESP=$(http POST "$API_URL/api/transactions/pay" --token "$ADMIN_TOKEN" --data "{\"kode_billing\": \"$BILLING_CODE\"}")
+    run_test "Pay Transaction" "$PAY_RESP" "Payment successful"
+  fi
+}
+
+# ------------------ MAIN ------------------
+main() {
+  clear
+  printf "${CYAN}=== MICROSERVICES TEST SUITE ===${NC}\n"
+  printf "API Gateway: %s\n\n" "$API_URL"
+
+  # Quick gateway check
+  print_subheader "Checking API Gateway"
+  if http GET "$API_URL/" | grep -qE "no Route matched|no Service matched|Kong"; then
+    printf "${GREEN}✅ API Gateway seems up${NC}\n"
+  else
+    printf "${RED}❌ API Gateway not responding; aborting tests${NC}\n"
+    exit 1
+  fi
+
+  test_auth_service
+  test_rbac_service
+  test_product_service
+  test_cart_service
+  test_transaction_service
+
+  print_header "TEST SUMMARY"
+  printf "Total: %s | Passed: %s | Failed: %s\n" "$TOTAL_TESTS" "$PASSED_TESTS" "$FAILED_TESTS"
+  if [ "$FAILED_TESTS" -eq 0 ]; then
+    printf "${GREEN}ALL TESTS PASSED${NC}\n"
+  else
+    printf "${YELLOW}%s tests failed${NC}\n" "$FAILED_TESTS"
+  fi
+}
+
+main
 #!/bin/bash
 
 # ============================================

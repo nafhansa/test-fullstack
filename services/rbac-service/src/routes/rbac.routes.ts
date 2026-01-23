@@ -17,4 +17,8 @@ router.post('/add_users', internalAuth, addUser);
 router.put('/update_users/:id', internalAuth, updateUser); 
 router.delete('/delete_users/:id', internalAuth, deleteUser);
 
+// Also accept API gateway forwarded paths (no URI rewrite)
+router.put('/api/users/:id', internalAuth, updateUser);
+router.delete('/api/users/:id', internalAuth, deleteUser);
+
 export default router;

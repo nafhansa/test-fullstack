@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import rbacRoutes from './routes/rbac.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { requestLogger } from './middleware/requestLogger';
 
 dotenv.config();
 
@@ -21,6 +22,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-INTERNAL-KEY']
 }));
 app.use(express.json());
+// Log incoming requests for debugging Kong forwarding
+app.use(requestLogger);
 
 // Swagger Documentation
 const swaggerDocument = yaml.load(

@@ -280,6 +280,18 @@ Alternatif, bisa juga liat file YAML-nya:
 - `product-service/swagger.yaml`
 - `transaction-service/swagger.yaml`
 
+## Recent Backend Notes (2026-01-23)
+
+- RBAC Service added: `rbac-service` runs on port `3004` and uses `db_auth` (same auth DB). Its internal endpoints require `X-INTERNAL-KEY` that must match `INTERNAL_SECRET_KEY` set in the environment (see [`services/docker-compose.full.yml`](services/docker-compose.full.yml)).
+- The RBAC controller now coerces `status` input to numeric values before DB writes to avoid errors when clients send strings like `"ACTIVE"`. If you change RBAC code, rebuild and restart the container:
+
+```bash
+cd services
+docker-compose -f docker-compose.full.yml up -d --build rbac-service
+```
+
+- Kong (API Gateway) runs in DB-less mode and uses the declarative config at [`services/api-gateway/kong.yml`](services/api-gateway/kong.yml). Any change to routing/plugins requires restarting the Kong container.
+
 ## 🔧 Troubleshooting
 
 **Service restart terus-terusan:**

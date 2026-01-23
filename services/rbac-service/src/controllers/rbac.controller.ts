@@ -37,7 +37,22 @@ export async function addUser(req: Request, res: Response) {
   const connection = await pool.getConnection();
   
   try {
-    const { name, email, password, role = 'PEMBELI', status = true } = req.body;
+    let { name, email, password, role = 'PEMBELI', status = true } = req.body;
+
+    // Normalize status to numeric 1 (active) or 0 (inactive)
+    if (typeof status === 'string') {
+      const s = status.toLowerCase();
+      if (s === 'active' || s === 'true') status = 1;
+      else if (s === 'inactive' || s === 'false') status = 0;
+      else {
+        const n = Number(status);
+        status = Number.isFinite(n) ? (n ? 1 : 0) : 1;
+      }
+    } else if (typeof status === 'boolean') {
+      status = status ? 1 : 0;
+    } else if (typeof status === 'number') {
+      status = status ? 1 : 0;
+    }
 
     // Validation
     if (!name || !email || !password) {
@@ -104,7 +119,25 @@ export async function updateUser(req: Request, res: Response) {
   
   try {
     const { id } = req.params;
-    const { name, email, password, role, status } = req.body;
+    const { name, email, password, role } = req.body;
+    let { status } = req.body as { status?: any };
+
+    // Normalize status if provided
+    if (status !== undefined) {
+      if (typeof status === 'string') {
+        const s = status.toLowerCase();
+        if (s === 'active' || s === 'true') status = 1;
+        else if (s === 'inactive' || s === 'false') status = 0;
+        else {
+          const n = Number(status);
+          status = Number.isFinite(n) ? (n ? 1 : 0) : undefined;
+        }
+      } else if (typeof status === 'boolean') {
+        status = status ? 1 : 0;
+      } else if (typeof status === 'number') {
+        status = status ? 1 : 0;
+      }
+    }
 
     // Check if user exists
     const [existingUsers] = await connection.query<User[]>(
