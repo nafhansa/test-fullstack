@@ -201,3 +201,16 @@ JWT_SECRET=your-jwt-secret-key-here    # Akan dipakai untuk JWT verification
 ```
 
 ⚠️ **IMPORTANT:** Jangan commit `.env` ke git! File ini sudah masuk `.gitignore`.
+
+## Recent Gateway Notes (2026-01-23)
+
+- Kong is configured in DB-less mode using the declarative file at `services/api-gateway/kong.yml`. Edit that file to change routes or plugins, then restart the Kong container via the full compose file:
+
+```bash
+cd services
+docker-compose -f docker-compose.full.yml up -d --build kong
+```
+
+- Do not rely on mutating plugin or route entities via Kong Admin API when Kong runs DB-less: changes should be made in `kong.yml` and applied by restarting the container.
+
+- If Kong appears to forward an unresolved placeholder (literal `$1`) in upstream URIs, inspect any `request-transformer` `replace.uri` entries in `kong.yml` and prefer forwarding original paths or using Kong-supported substitution. Restart Kong after edits.

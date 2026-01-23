@@ -71,3 +71,8 @@ export default defineConfig([
   },
 ])
 ```
+
+## Project-specific Notes (2026-01-23)
+
+- Admin users management (`frontend/src/pages/dashboard/admin/UsersPage.tsx`) was updated to send numeric `status` (1 = active, 0 = inactive) when calling `PUT /users/:id` to match backend expectations.
+- If you update frontend behavior around users, keep `status` as numeric when calling the RBAC endpoints proxied by Kong.

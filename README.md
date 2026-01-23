@@ -14,33 +14,32 @@ Aplikasi e-commerce lengkap dengan arsitektur microservices. Frontend pakai Reac
 
 ## 🏗️ Arsitektur
 
-```
-┌─────────────────┐
-│  React Frontend │
-│   Port: 5173    │
-└────────┬────────┘
-         │
-         ↓
-┌─────────────────┐
-│  Kong Gateway   │
-│   Port: 3000    │ ← Single Entry Point
-└────────┬────────┘
-         │
-    ┌────┴─────────────────┐
-    │                      │
-    ↓                      ↓
-┌──────────┐    ┌──────────────┐    ┌────────────────┐
-│   Auth   │    │   Product    │    │  Transaction   │
-│ Service  │    │   Service    │    │    Service     │
-│Port: 3001│    │  Port: 3002  │    │   Port: 3003   │
-└─────┬────┘    └──────┬───────┘    └───────┬────────┘
-      │                │                     │
-      ↓                ↓                     ↓
-┌──────────┐    ┌──────────┐         ┌──────────┐
-│ MySQL    │    │ MySQL    │         │ MySQL    │
-│ db_auth  │    │db_product│         │db_trans  │
-│Port: 3307│    │Port: 3308│         │Port: 3309│
-└──────────┘    └──────────┘         └──────────┘
+```                    ┌───────────────────┐
+                       │  React Frontend   │
+                       │    Port: 5173     │
+                       └─────────┬─────────┘
+                                 │
+                                 ▼
+                       ┌───────────────────┐
+                       │   Kong Gateway    │
+                       │    Port: 3000     │
+                       └─────────┬─────────┘
+                                 │
+      ┌──────────────┬───────────┴───────────┬──────────────┐
+      │              │                       │              │
+      ▼              ▼                       ▼              ▼
+┌────────────┐ ┌────────────┐          ┌────────────┐ ┌────────────┐
+│    Auth    │ │    RBAC    │          │  Product   │ │Transaction │
+│   Service  │ │   Service  │          │  Service   │ │  Service   │
+│ Port: 3001 │ │ Port: 3004 │          │ Port: 3002 │ │ Port: 3003 │
+└─────┬──────┘ └─────┬──────┘          └─────┬──────┘ └─────┬──────┘
+      │              │                       │              │
+      ▼              ▼                       ▼              ▼
+┌────────────┐ ┌────────────┐          ┌────────────┐ ┌────────────┐
+│   MySQL    │ │   MySQL    │          │   MySQL    │ │   MySQL    │
+│  db_auth   │ │  db_auth   │          │ db_product │ │  db_trans  │
+│ Port: 3307 │ │ Port: 3307 │          │ Port: 3308 │ │ Port: 3309 │
+└────────────┘ └────────────┘          └────────────┘ └────────────┘
 ```
 
 ### Isolasi Microservices
@@ -343,6 +342,20 @@ Kalau mau import ke Postman atau tools lain:
 - [services/auth-service/swagger.yaml](services/auth-service/swagger.yaml)
 - [services/product-service/swagger.yaml](services/product-service/swagger.yaml)
 - [services/transaction-service/swagger.yaml](services/transaction-service/swagger.yaml)
+
+## Recent Notes (2026-01-23)
+
+- Added RBAC service (internal user management) running on port `3004`. RBAC internal endpoints require the `X-INTERNAL-KEY` header to match the environment `INTERNAL_SECRET_KEY` (set in docker-compose). See [services/rbac-service](services/rbac-service) for details.
+- RBAC now normalizes `status` values server-side (accepts `"ACTIVE"`/`"INACTIVE"`, booleans or numbers) to prevent SQL errors; frontend `PUT /users/:id` was updated to send numeric `status` (1 = active, 0 = inactive).
+- If you modify the Kong declarative config (`services/api-gateway/kong.yml`), remember Kong is running in DB-less mode: update the file and restart the Kong container so changes take effect:
+
+```bash
+# from repository root
+cd services
+docker-compose -f docker-compose.full.yml up -d --build kong
+```
+
+- Avoid editing Kong plugin entities at runtime when Kong is DB-less; prefer editing `services/api-gateway/kong.yml` and restarting the container.
 
 ### Test Manual via curl
 

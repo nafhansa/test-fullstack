@@ -62,7 +62,8 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
-        const rbacPayload = { ...formData, status: formData.status === 'ACTIVE' };
+        // send explicit numeric status (1 = active, 0 = inactive)
+        const rbacPayload = { ...formData, status: formData.status === 'ACTIVE' ? 1 : 0 };
         await api.put(`/users/${editingUser.id}`, rbacPayload);
       } else {
         await api.post('/auth/register', formData);
